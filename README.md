@@ -1,0 +1,2 @@
+# oradb
+Oracle database scripts
