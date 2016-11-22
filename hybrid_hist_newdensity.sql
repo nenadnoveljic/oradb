@@ -2,7 +2,7 @@
  * hybrid_hist_newdensity.sql
  *
  * The query calculates the new density value for hybrid histograms
- * For more information see http://nenadnoveljic.com/blog/
+ * For more information see http://nenadnoveljic.com/blog/density-calculation-hybrid-histograms
  *
  * Author: Nenad Noveljic
  *
