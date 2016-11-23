@@ -2,7 +2,11 @@
  * hybrid_hist_newdensity.sql
  *
  * The query calculates the new density value for hybrid histograms
- * For more information see http://nenadnoveljic.com/blog/density-calculation-hybrid-histograms
+ * Based on information in following blog posts:
+ *   Mohamed Houri:  
+ *     http://allthingsoracle.com/12c-hybrid-histogram/
+ *   Nenad Noveljic: 
+ *     http://nenadnoveljic.com/blog/density-calculation-hybrid-histograms
  *
  * Author: Nenad Noveljic
  *
