@@ -1,16 +1,26 @@
 #!/usr/bin/perl -w 
 #
-#  Copyright: (c) Nenad Noveljic - All rights reserved
+# USAGE: select_x_linked_events.pl
 #
-# http://nenadnoveljic.com
+# The environment variables must be set
+#
+# Version: v1.1
+#
+# Author: Nenad Noveljic
+#
+# See also: http://nenadnoveljic.com/blog/event-propagation-in-oracle-12-2
 #
 # The script traverses the doubly linked list for the session events on 
-# a 12.2 Oracle database. If the internal implementation changes, the script
+# a 12.2 Oracle database. The script produces result only if at least one event is set.
+# If the internal implementation changes, the script
 # will not show the correct result. Since no latches are set, the view might 
 # be inconsistent in the case of  concurrent changes.
 #
 # For experimental purposes only, not intended for production !!!
 #
+
+#$ENV{ORACLE_HOME} = '/u00/oracle/orabase/product/12.2.0.1.0' ;
+#$ENV{ORACLE_SID} 
 
 use strict ;
 
@@ -48,9 +58,22 @@ foreach my $i (1, 2, 3) {
 
 my $i = 1 ;
 foreach my $base (@element_bases) {
+  my $is_sql ;
   print "\n$i. element:\n" ;
-  foreach my $offset ( 0x0, 0x28, 0x38, 0x50, 0x68, 0x70 ) {
-    print_offset( $base , $offset ) ;
+  foreach my $offset 
+    ( 0x0, 0x28, 0x38, 0x48, 0x50, 0x68, 0x70, 0xb8 ) 
+  {
+    my $value = print_offset( $base , $offset ) ;
+    if ( $offset == 0x48 and hex $value ) {
+      $is_sql = 1 ;
+      print "  => " ;
+      print_string( $value ) ;
+    }
+    if ( $offset == 0xb8 and $is_sql  ) {
+      print "  = " ;
+      print_string( add_offset($base , $offset) ) ;
+    }
+    
   }
   $i++ ;
 }
@@ -73,28 +96,60 @@ EOD} ;
   return @out ;
 }
 
+sub get_value {
+  my ( $addr , $opts_ref ) = @_ ;
+  my $value =  oradebug_peek($addr, $opts_ref ) ;
+  return $value ;
+}
+
 sub print_offset {
-  my ( $base , $offset ) = @_ ;
+  my ( $base , $offset  ) = @_ ;
   my $addr =  add_offset($base, $offset ) ;
-  my $value =  oradebug_peek($addr) ;
+  my $value = get_value( $addr  ) ;
   print qq{$base+} . sprintf('%2X', $offset) . ": *" . $addr . " = $value\n";
   return $value ;
 }
 
+sub print_string {
+  my $address = shift @_ ;
+  
+  my $double_quads = 1 ;
+  
+  DOUBLE_QUAD:
+  while (1) {
+    my $sql_id_hex = get_value( $address , { len => 16}) ;
+    
+    foreach my $word ( split m{\s+}xms , $sql_id_hex ) {
+      #little endian assumed here
+      for ( my $i = 3 ; $i >= 0 ; $i-- ) {
+        my $ascii = substr $word , $i * 2 , 2 ;
+        last DOUBLE_QUAD if  ( $ascii eq '00' ) ;
+        print chr(hex $ascii)   ; 
+      }
+    }
+    last DOUBLE_QUAD if ($double_quads > 4) ; 
+    $address = sprintf("%X",hex($address) + 16 );
+    $double_quads++ ;
+  }
+  print "\n" ;
+}
+
 sub oradebug_peek {
-  my $addr = shift @_ ;
+  my ( $addr , $opts_ref ) =  @_ ;
+  my $len = $opts_ref->{len} ? $opts_ref->{len} : 1 ; 
   my $addr_presented = '0' . $addr ;
   my @out = exec_sqlplus(qq{
 oradebug setmypid
-oradebug peek 0x$addr 1
+oradebug peek 0x$addr $len
 }) ; 
   
   my $value ;
   LINE:
   foreach my $line (@out) {
-    next LINE if $line !~ m{\[${addr_presented}.*=\s*(\S+)}xms ;
+    next LINE if $line !~ m{\[${addr_presented}.*=\s*(.*)}xms ;
     $value = $1 ; 
     last LINE
   } 
-   return $value ;
+  chomp $value ;
+  return $value ;
 }
