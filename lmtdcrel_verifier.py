@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
-#(c) 2019 Nenad Noveljic All Rights Reserved
+# (c) 2019 Nenad Noveljic All Rights Reserved
 
 # Usage: lmtdcrel_verifier.py lmtdcrel.log
 
-# see 
-
 # v1.0
+
+# see 
 
 import sys
 import re
