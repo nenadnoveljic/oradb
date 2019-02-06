@@ -6,7 +6,7 @@
 
 # v1.0
 
-# see 
+# see https://nenadnoveljic.com/blog/tracking-the-optimizer-with-gdb/
 
 import sys
 import re
