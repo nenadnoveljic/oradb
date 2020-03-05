@@ -1,3 +1,8 @@
+/*
+ * Author: Nenad Noveljic
+ * v1.0
+ */
+
 column begin_interval_time new_value begin_ts
 column end_interval_time new_value end_ts
 
